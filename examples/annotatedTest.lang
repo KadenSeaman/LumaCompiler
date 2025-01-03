@@ -1,0 +1,22 @@
+class Dummy {
+  String data
+  void methods()
+}
+
+class Flight {
+   flightNumber : Integer
+   departureTime : Date
+}
+
+TOKENS:
+
+class (reserved)
+Open Bracket
+Identifier
+String (reserved)
+identifier
+void (reserved)
+Identifier
+OpenParnethese
+ClosedParenthese
+CloseBracket
