@@ -11,7 +11,7 @@ type Parser struct {
 	pos    int
 }
 
-func newParser(tokens []lexer.Token) *Parser {
+func NewParser(tokens []lexer.Token) *Parser {
 	return &Parser{
 		tokens: tokens,
 		pos:    0,
@@ -34,7 +34,7 @@ func (p *Parser) nextToken() lexer.Token {
 	return p.currentToken()
 }
 
-func (p *Parser) parse() (*ASTNode, error) {
+func (p *Parser) Parse() (*ASTNode, error) {
 	root := &ASTNode{Type: PROPERTY, Name: "root"} // root node
 
 	for p.currentTokenKind() != lexer.EOF {
@@ -97,18 +97,19 @@ func (p *Parser) parseClass() (*ASTNode, error) {
 }
 
 func (p *Parser) parseProperty() (*ASTNode, error) {
-	if p.currentTokenKind() != lexer.OPERATOR {
-		return nil, fmt.Errorf("expected visiblity in property, got %s", p.currentToken().Value)
+
+	propertyValue := ""
+
+	if p.currentTokenKind() == lexer.OPERATOR {
+		propertyValue += p.currentToken().Value
+		p.nextToken() // skip visilbity
 	}
-	visibilityToken := p.currentToken()
-	p.nextToken() // skip visilbity
 
 	if p.currentTokenKind() != lexer.IDENTIFIER {
 		return nil, fmt.Errorf("expected Identifier in property, got %s", p.currentToken().Value)
 	}
-	identifierToken := p.currentToken()
 
-	propertyValue := visibilityToken.Value + identifierToken.Value
+	propertyValue += p.currentToken().Value
 
 	propertyNode := &ASTNode{Type: PROPERTY, Name: propertyValue}
 	p.nextToken() // skip identifier

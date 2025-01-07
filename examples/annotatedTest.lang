@@ -1,11 +1,11 @@
 class Dummy {
-  String data
-  void methods()
+  +String data
+  +void methods()
 }
 
 class Flight {
-   flightNumber : Integer
-   departureTime : Date
+   +flightNumber : Integer
+   +departureTime : Date
 }
 
 TOKENS:

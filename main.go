@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/kadenSeaman/lumaCompiler/lexer"
+	"github.com/kadenSeaman/lumaCompiler/parser"
 )
 
 func main() {
@@ -12,9 +13,9 @@ func main() {
 
 	tokens := lexer.Tokenize(string(bytes))
 
-	p := parser.newParser(tokens)
+	p := parser.NewParser(tokens)
 
-	ast, err := p.parse()
+	ast, err := p.Parse()
 
 	if err != nil {
 		fmt.Println("Error parsing:", err)
