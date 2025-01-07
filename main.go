@@ -21,6 +21,6 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Parsed AST: \n%v\n", ast)
+	fmt.Printf("Parsed AST: \n%+v\n", ast)
 
 }

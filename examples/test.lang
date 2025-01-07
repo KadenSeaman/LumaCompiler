@@ -1,6 +1,4 @@
 class Dummy {
-    -field1
-    #field2
-    ~method1
-    +method2()
+    -make : string = toyota
+    +getAttribute1(str : string = f) : string[]
 }

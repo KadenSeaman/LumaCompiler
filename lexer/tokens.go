@@ -20,14 +20,8 @@ func tokenKindString(token Token) string {
 		return "IDENTIFIER"
 	case CLASS:
 		return "CLASS"
-	case VOID:
-		return "VOID"
-	case NULL:
-		return "NULL"
 	case INTERFACE:
 		return "INTERFACE"
-	case OBJECT:
-		return "OBJECT"
 	case LPAREN:
 		return "LPAREN"
 	case RPAREN:
@@ -40,8 +34,6 @@ func tokenKindString(token Token) string {
 		return "LBRACKET"
 	case RBRACKET:
 		return "RBRACKET"
-	case SYMBOL:
-		return "SYMBOL"
 	case OPERATOR:
 		return "OPERATOR"
 	case EQUALS:
@@ -67,10 +59,7 @@ func tokenKindString(token Token) string {
 
 var reservedLookup map[string]TokenKind = map[string]TokenKind{
 	"class":     CLASS,
-	"void":      VOID,
-	"null":      NULL,
 	"interface": INTERFACE,
-	"object":    OBJECT,
 }
 
 var operatorLookup map[string]TokenKind = map[string]TokenKind{
@@ -103,10 +92,7 @@ const (
 
 	// Keywords
 	CLASS
-	VOID
-	NULL
 	INTERFACE
-	OBJECT
 
 	// Grouping
 	LPAREN
@@ -119,7 +105,6 @@ const (
 	COMMA
 
 	// Symbols & Operators
-	SYMBOL
 	OPERATOR
 	EQUALS
 

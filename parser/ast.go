@@ -1,6 +1,7 @@
 package parser
 
 type NodeType int
+type RelationType int
 
 const (
 	CLASS NodeType = iota
@@ -11,10 +12,23 @@ const (
 	ROOT
 )
 
+const (
+	INHERITANCE RelationType = iota
+	COMPOSITION
+	AGGREGATION
+	ASSOCIATION
+)
+
 type ASTNode struct {
-	Type       NodeType
-	Name       string
-	Visibility string
-	Parameters []ASTNode
-	Children   []ASTNode
+	Type         NodeType
+	RelationType RelationType
+	Name         string
+	Visibility   string
+	Parameters   []ASTNode
+	Children     []ASTNode
+	Default      string
+	ValueType    string
+	ReturnType   string
+	SourceClass  string
+	TargetClass  string
 }

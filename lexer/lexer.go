@@ -79,6 +79,10 @@ func isComma(c byte) bool {
 	return c == ','
 }
 
+func isEquals(c byte) bool {
+	return c == '='
+}
+
 func Tokenize(source string) []Token {
 	lex := createLexer(source)
 
@@ -109,17 +113,19 @@ func Tokenize(source string) []Token {
 		} else if isRightParenthese(lex.at()) {
 			lex.push(newToken(")", RPAREN))
 		} else if isLeftBrace(lex.at()) {
-			lex.push(newToken("[", LBRACE))
+			lex.push(newToken("{", LBRACE))
 		} else if isRightBrace(lex.at()) {
-			lex.push(newToken("]", RBRACE))
+			lex.push(newToken("}", RBRACE))
 		} else if isLeftBracket(lex.at()) {
-			lex.push(newToken("{", LBRACKET))
+			lex.push(newToken("[", LBRACKET))
 		} else if isRightBracket(lex.at()) {
-			lex.push(newToken("}", RBRACKET))
+			lex.push(newToken("]", RBRACKET))
 		} else if isColon(lex.at()) {
 			lex.push(newToken(":", COLON))
 		} else if isComma(lex.at()) {
 			lex.push(newToken(",", COMMA))
+		} else if isEquals(lex.at()) {
+			lex.push(newToken("=", EQUALS))
 		} else if lex.at() == '/' && lex.atAdvanceN(1) == '/' {
 			//comments
 			lex.advanceN(2)

@@ -118,12 +118,52 @@ func (p *Parser) parseMember() (*ASTNode, error) {
 		return p.parseMethod(name, visibility)
 	}
 
-	propertyNode := &ASTNode{Type: FIELD, Name: name, Visibility: visibility}
+	return p.parseField(name, visibility)
+}
+
+func (p *Parser) parseField(name string, visibility string) (*ASTNode, error) {
+	valueType := ""
+	defaultValue := ""
+
+	if p.currentTokenKind() == lexer.COLON {
+		//specified type
+		p.nextToken() // skip colon
+		if p.currentTokenKind() != lexer.IDENTIFIER {
+			return nil, fmt.Errorf("expected Identifier after colon in property, got %s", p.currentToken().Value)
+		}
+		valueType = p.currentToken().Value
+		p.nextToken() // skip identifier
+
+		//check for array value
+		if p.currentTokenKind() == lexer.LBRACKET {
+			valueType += p.currentToken().Value
+			p.nextToken() // skip [
+
+			if p.currentTokenKind() != lexer.RBRACKET {
+				return nil, fmt.Errorf("expected ] after [ in field type decleration, got %s", p.currentToken().Value)
+			}
+
+			valueType += p.currentToken().Value
+			p.nextToken() // skip ]
+		}
+	}
+
+	if p.currentTokenKind() == lexer.EQUALS {
+		p.nextToken() // skip equals
+		if p.currentTokenKind() != lexer.IDENTIFIER {
+			return nil, fmt.Errorf("expected Identifier after equals in property, got %s", p.currentToken().Value)
+		}
+		defaultValue = p.currentToken().Value
+		p.nextToken()
+	}
+
+	propertyNode := &ASTNode{Type: FIELD, Name: name, Visibility: visibility, ValueType: valueType, Default: defaultValue}
 
 	return propertyNode, nil
 }
 
 func (p *Parser) parseMethod(name string, visibility string) (*ASTNode, error) {
+	returnType := ""
 	methodNode := &ASTNode{
 		Type:       METHOD,
 		Name:       name,
@@ -134,13 +174,15 @@ func (p *Parser) parseMethod(name string, visibility string) (*ASTNode, error) {
 
 	for p.currentTokenKind() != lexer.RPAREN && p.currentTokenKind() != lexer.EOF {
 		if p.currentTokenKind() == lexer.IDENTIFIER {
-			param := ASTNode{
-				Type: FIELD,
-				Name: p.currentToken().Value,
-			}
-			methodNode.Parameters = append(methodNode.Parameters, param)
+			name := p.currentToken().Value
 			p.nextToken()
+			propertyNode, err := p.parseField(name, "")
 
+			if err != nil {
+				return nil, err
+			}
+
+			methodNode.Parameters = append(methodNode.Parameters, *propertyNode)
 			if p.currentTokenKind() == lexer.COMMA {
 				p.nextToken()
 			}
@@ -153,6 +195,33 @@ func (p *Parser) parseMethod(name string, visibility string) (*ASTNode, error) {
 		return nil, fmt.Errorf("expected ) after method parameters, got %s", p.currentToken().Value)
 	}
 	p.nextToken() // skip )
+
+	if p.currentTokenKind() == lexer.COLON {
+		//specified type
+		p.nextToken() // skip colon
+		if p.currentTokenKind() != lexer.IDENTIFIER {
+			return nil, fmt.Errorf("expected Identifier after colon in property, got %s", p.currentToken().Value)
+		}
+
+		//optional array return type
+
+		returnType = p.currentToken().Value
+		p.nextToken() //skip identifier
+
+		if p.currentTokenKind() == lexer.LBRACKET {
+			returnType += p.currentToken().Value
+			p.nextToken() // skip [
+
+			if p.currentTokenKind() != lexer.RBRACKET {
+				return nil, fmt.Errorf("expected ] after [ in field type decleration, got %s", p.currentToken().Value)
+			}
+
+			returnType += p.currentToken().Value
+			p.nextToken() // skip ]
+		}
+
+		methodNode.ReturnType = returnType
+	}
 
 	return methodNode, nil
 }
