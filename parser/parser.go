@@ -35,7 +35,7 @@ func (p *Parser) nextToken() lexer.Token {
 }
 
 func (p *Parser) Parse() (*ASTNode, error) {
-	root := &ASTNode{Type: PROPERTY, Name: "root"} // root node
+	root := &ASTNode{Type: ROOT, Name: "root"} // root node
 
 	for p.currentTokenKind() != lexer.EOF {
 		node, err := p.parseEntity()
@@ -53,13 +53,14 @@ func (p *Parser) Parse() (*ASTNode, error) {
 func (p *Parser) parseEntity() (*ASTNode, error) {
 	token := p.currentToken()
 
-	if token.Kind == lexer.CLASS {
+	switch token.Kind {
+	case lexer.CLASS:
 		return p.parseClass()
-	} else if token.Kind == lexer.INTERFACE {
+	case lexer.INTERFACE:
 		return p.parseInterface()
+	default:
+		return nil, fmt.Errorf("unexpected token: %s", token.Value)
 	}
-
-	return nil, fmt.Errorf("unexpected token: %s", token.Value)
 }
 
 func (p *Parser) parseClass() (*ASTNode, error) {
@@ -80,11 +81,11 @@ func (p *Parser) parseClass() (*ASTNode, error) {
 		p.nextToken()
 
 		for p.currentTokenKind() != lexer.EOF && p.currentTokenKind() != lexer.RBRACE {
-			propertyNode, err := p.parseProperty()
+			propertyNode, err := p.parseMember()
 			if err != nil {
 				return nil, err
 			}
-			classNode.Properties = append(classNode.Properties, *propertyNode)
+			classNode.Children = append(classNode.Children, *propertyNode)
 		}
 
 		if p.currentTokenKind() != lexer.RBRACE {
@@ -96,24 +97,64 @@ func (p *Parser) parseClass() (*ASTNode, error) {
 	return classNode, nil
 }
 
-func (p *Parser) parseProperty() (*ASTNode, error) {
+func (p *Parser) parseMember() (*ASTNode, error) {
+	visibility := ""
 
-	propertyValue := ""
-
+	// Handle optional visibility
 	if p.currentTokenKind() == lexer.OPERATOR {
-		propertyValue += p.currentToken().Value
+		visibility = p.currentToken().Value
 		p.nextToken() // skip visilbity
 	}
 
+	// Must have an identifier
 	if p.currentTokenKind() != lexer.IDENTIFIER {
 		return nil, fmt.Errorf("expected Identifier in property, got %s", p.currentToken().Value)
 	}
 
-	propertyValue += p.currentToken().Value
+	name := p.currentToken().Value
+	p.nextToken() // Skip Identifier
 
-	propertyNode := &ASTNode{Type: PROPERTY, Name: propertyValue}
-	p.nextToken() // skip identifier
+	if p.currentTokenKind() == lexer.LPAREN {
+		return p.parseMethod(name, visibility)
+	}
+
+	propertyNode := &ASTNode{Type: FIELD, Name: name, Visibility: visibility}
+
 	return propertyNode, nil
+}
+
+func (p *Parser) parseMethod(name string, visibility string) (*ASTNode, error) {
+	methodNode := &ASTNode{
+		Type:       METHOD,
+		Name:       name,
+		Visibility: visibility,
+	}
+
+	p.nextToken() // skip (
+
+	for p.currentTokenKind() != lexer.RPAREN && p.currentTokenKind() != lexer.EOF {
+		if p.currentTokenKind() == lexer.IDENTIFIER {
+			param := ASTNode{
+				Type: FIELD,
+				Name: p.currentToken().Value,
+			}
+			methodNode.Parameters = append(methodNode.Parameters, param)
+			p.nextToken()
+
+			if p.currentTokenKind() == lexer.COMMA {
+				p.nextToken()
+			}
+		} else {
+			return nil, fmt.Errorf("expected parameter name or ), got %s", p.currentToken().Value)
+		}
+	}
+
+	if p.currentTokenKind() != lexer.RPAREN {
+		return nil, fmt.Errorf("expected ) after method parameters, got %s", p.currentToken().Value)
+	}
+	p.nextToken() // skip )
+
+	return methodNode, nil
 }
 
 func (p *Parser) parseInterface() (*ASTNode, error) {

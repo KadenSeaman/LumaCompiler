@@ -5,13 +5,16 @@ type NodeType int
 const (
 	CLASS NodeType = iota
 	INTERFACE
-	RELTATIONSHIP
-	PROPERTY
+	RELATIONSHIP
+	FIELD
+	METHOD
+	ROOT
 )
 
 type ASTNode struct {
 	Type       NodeType
 	Name       string
-	Properties []ASTNode
+	Visibility string
+	Parameters []ASTNode
 	Children   []ASTNode
 }

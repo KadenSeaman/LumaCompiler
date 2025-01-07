@@ -12,7 +12,6 @@ func main() {
 	bytes, _ := os.ReadFile("./examples/test.lang")
 
 	tokens := lexer.Tokenize(string(bytes))
-
 	p := parser.NewParser(tokens)
 
 	ast, err := p.Parse()
@@ -22,5 +21,6 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Parsed AST: %+v\n", ast)
+	fmt.Printf("Parsed AST: \n%v\n", ast)
+
 }

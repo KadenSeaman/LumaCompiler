@@ -58,6 +58,8 @@ func tokenKindString(token Token) string {
 		return "NOT_FOUND"
 	case COLON:
 		return "COLON"
+	case COMMA:
+		return "COMMA"
 	default:
 		return "UNKNOWN"
 	}
@@ -114,6 +116,7 @@ const (
 	LBRACKET
 	RBRACKET
 	COLON
+	COMMA
 
 	// Symbols & Operators
 	SYMBOL
