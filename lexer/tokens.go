@@ -47,11 +47,9 @@ func tokenKindString(token Token) string {
 	case EQUALS:
 		return "EQUALS"
 	case SINGLE_LINE_COMMENT:
-		return "SINGLE_LINE_COMMENT"
-	case OPEN_MULTI_LINE_COMMENT:
-		return "OPEN_MULTI_LINE_COMMENT"
-	case CLOSE_MULTI_LINE_COMMENT:
-		return "CLOSE_MULTI_LINE_COMMENT"
+		return "COMMENT"
+	case MULTI_LINE_COMMENT:
+		return "MULTI_COMMENT"
 	case ESCAPE:
 		return "ESCAPE"
 	case WHITESPACE:
@@ -65,38 +63,27 @@ func tokenKindString(token Token) string {
 	}
 }
 
-func isReserved(str string) bool {
-	switch str {
-	case "class":
-		return true
-	case "void":
-		return true
-	case "null":
-		return true
-	case "interface":
-		return true
-	case "object":
-		return true
-	default:
-		return false
-	}
+var reservedLookup map[string]TokenKind = map[string]TokenKind{
+	"class":     CLASS,
+	"void":      VOID,
+	"null":      NULL,
+	"interface": INTERFACE,
+	"object":    OBJECT,
 }
 
-func getReservedTypeFromStr(str string) TokenKind {
-	switch str {
-	case "class":
-		return CLASS
-	case "void":
-		return VOID
-	case "null":
-		return NULL
-	case "interface":
-		return INTERFACE
-	case "object":
-		return OBJECT
-	default:
-		return NOT_FOUND
-	}
+var operatorLookup map[string]TokenKind = map[string]TokenKind{
+	"<": OPERATOR,
+	">": OPERATOR,
+	"|": OPERATOR,
+	"o": OPERATOR,
+	"-": OPERATOR,
+	".": OPERATOR,
+	"*": OPERATOR,
+	"x": OPERATOR,
+	"#": OPERATOR,
+	"~": OPERATOR,
+	"/": OPERATOR,
+	"+": OPERATOR,
 }
 
 func Debug(token Token) {
@@ -135,8 +122,7 @@ const (
 
 	// Comments
 	SINGLE_LINE_COMMENT
-	OPEN_MULTI_LINE_COMMENT
-	CLOSE_MULTI_LINE_COMMENT
+	MULTI_LINE_COMMENT
 	ESCAPE
 
 	// WHITESPACE

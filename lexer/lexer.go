@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"strings"
 )
 
 type lexer struct {
@@ -22,6 +23,10 @@ func (lex *lexer) at() byte {
 	return lex.source[lex.pos]
 }
 
+func (lex *lexer) atAdvanceN(n int) byte {
+	return lex.source[lex.pos+n]
+}
+
 func (lex *lexer) at_eof() bool {
 	return lex.pos >= len(lex.source)
 }
@@ -40,10 +45,6 @@ func isAlphaNumeric(c byte) bool {
 
 func isWhitespace(c byte) bool {
 	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
-}
-
-func isOperator(c byte) bool {
-	return c == '<' || c == '>' || c == '|' || c == 'o' || c == '-' || c == '.' || c == '*' || c == 'x' || c == '#' || c == '~'
 }
 
 func isLeftParenthese(c byte) bool {
@@ -82,42 +83,51 @@ func Tokenize(source string) []Token {
 		if isWhitespace(lex.at()) {
 
 		} else if isAlphaNumeric(lex.at()) {
-			str := ""
-			for isAlphaNumeric(lex.at()) {
-				str += string(lex.at())
+			var builder strings.Builder
+
+			for isAlphaNumeric(lex.at()) && !lex.at_eof() {
+				builder.WriteString(string(lex.at()))
 				lex.advanceN(1)
 			}
 
-			if isReserved(str) {
-				lex.push(newToken(str, getReservedTypeFromStr((str))))
-			} else if isOperator(lex.at()) {
-				lex.push(newToken(str, OPERATOR))
+			value := builder.String()
+
+			if kind, exists := reservedLookup[value]; exists {
+				lex.push(newToken(value, kind))
 			} else {
-				lex.push(newToken(str, IDENTIFIER))
+				lex.push(newToken(value, IDENTIFIER))
 			}
+			//skip the advance at the end
+			continue
+
 		} else if isLeftParenthese(lex.at()) {
-			lex.push(newToken("(", LPAREN))
-			lex.advanceN(1)
+			lex.push(newToken("", LPAREN))
 		} else if isRightParenthese(lex.at()) {
-			lex.push(newToken(")", RPAREN))
-			lex.advanceN(1)
+			lex.push(newToken("", RPAREN))
 		} else if isLeftBrace(lex.at()) {
-			lex.push(newToken("{", LBRACE))
-			lex.advanceN(1)
+			lex.push(newToken("", LBRACE))
 		} else if isRightBrace(lex.at()) {
-			lex.push(newToken("}", RBRACE))
-			lex.advanceN(1)
+			lex.push(newToken("", RBRACE))
 		} else if isLeftBracket(lex.at()) {
-			lex.push(newToken("[", LBRACKET))
-			lex.advanceN(1)
+			lex.push(newToken("", LBRACKET))
 		} else if isRightBracket(lex.at()) {
-			lex.push(newToken("]", RBRACKET))
-			lex.advanceN(1)
+
+			lex.push(newToken("", RBRACKET))
 		} else if isColon(lex.at()) {
-			lex.push(newToken(":", COLON))
-			lex.advanceN(1)
-		} else if isOperator(lex.at()) {
-			lex.push(newToken(string(lex.at()), OPERATOR))
+			lex.push(newToken("", COLON))
+		} else if lex.at() == '/' && lex.atAdvanceN(1) == '/' {
+			//comments
+			lex.advanceN(2)
+			var builder strings.Builder
+
+			for lex.at() != '\n' && !lex.at_eof() {
+				builder.WriteString(string(lex.at()))
+				lex.advanceN(1)
+			}
+
+			lex.push(newToken(builder.String(), SINGLE_LINE_COMMENT))
+		} else if kind, exists := operatorLookup[string(lex.at())]; exists {
+			lex.push(newToken(string(lex.at()), kind))
 		} else {
 			fmt.Printf("Unknown character: %c\n", lex.at())
 		}
