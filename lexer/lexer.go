@@ -19,16 +19,20 @@ func (lex *lexer) push(token Token) {
 	lex.tokens = append(lex.tokens, token)
 }
 
-func (lex *lexer) at() byte {
+func (lex *lexer) currentChar() byte {
 	return lex.source[lex.pos]
 }
 
-func (lex *lexer) atAdvanceN(n int) byte {
+func (lex *lexer) charAtAdvanceN(n int) byte {
 	return lex.source[lex.pos+n]
 }
 
-func (lex *lexer) at_eof() bool {
+func (lex *lexer) isEOF() bool {
 	return lex.pos >= len(lex.source)
+}
+
+func (lex *lexer) isEOFAtAdvanceN(n int) bool {
+	return lex.pos+n >= len(lex.source)
 }
 
 func createLexer(source string) *lexer {
@@ -39,117 +43,148 @@ func createLexer(source string) *lexer {
 	}
 }
 
-func isAlphaNumeric(c byte) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+func (lexer *lexer) processAlphaNumeric() {
+	var builder strings.Builder
+
+	builder.WriteString(string(lexer.currentChar()))
+
+	for !lexer.isEOFAtAdvanceN(1) && isAlphaNumeric(lexer.charAtAdvanceN(1)) {
+		lexer.advanceN(1)
+		builder.WriteString(string(lexer.currentChar()))
+	}
+
+	value := builder.String()
+
+	if kind, exists := reservedLookup[value]; exists {
+		lexer.push(newToken(value, kind))
+	} else {
+		lexer.push(newToken(value, IDENTIFIER))
+	}
 }
 
-func isWhitespace(c byte) bool {
-	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
+func (lexer *lexer) processSingleLineComment() {
+	//comments
+	lexer.advanceN(2)
+	var builder strings.Builder
+
+	for lexer.currentChar() != '\n' && !lexer.isEOF() {
+		builder.WriteString(string(lexer.currentChar()))
+		lexer.advanceN(1)
+	}
+
+	lexer.push(newToken(builder.String(), SINGLE_LINE_COMMENT))
 }
 
-func isLeftParenthese(c byte) bool {
-	return c == '('
+func (lexer *lexer) processVisiblitySymbol() {
+	kind := visibilityLookup[lexer.currentChar()]
+	value := string(lexer.currentChar())
+
+	lexer.push(newToken(value, kind))
 }
 
-func isRightParenthese(c byte) bool {
-	return c == ')'
+func (lexer *lexer) processRelationship() {
+	var builder strings.Builder
+
+	builder.WriteString(string(lexer.currentChar()))
+
+	for !lexer.isEOFAtAdvanceN(1) && isRelationshipSymbol(lexer.charAtAdvanceN(1)) {
+		lexer.advanceN(1)
+		builder.WriteString(string(lexer.currentChar()))
+	}
+
+	value := builder.String()
+
+	if kind, exists := relationshipLookup[value]; exists {
+		lexer.push(newToken(value, kind))
+	} else if len(value) == 1 && isVisiblitySymbol([]byte(value)[0]) {
+		lexer.processVisiblitySymbol()
+	} else {
+		lexer.handleUnknownString(value)
+	}
 }
 
-func isLeftBrace(c byte) bool {
-	return c == '{'
+func (lexer *lexer) processQuotation() {
+	var builder strings.Builder
+
+	for !lexer.isEOFAtAdvanceN(1) && !isQuotationMark(lexer.charAtAdvanceN(1)) {
+		lexer.advanceN(1)
+		builder.WriteString(string(lexer.currentChar()))
+	}
+
+	lexer.advanceN(1) // skip end quotes
+
+	value := builder.String()
+
+	lexer.push(newToken(value, QUOTATION))
 }
 
-func isRightBrace(c byte) bool {
-	return c == '}'
+func (lexer *lexer) handleUnknownCharacter() {
+	fmt.Printf("Unknown character: %c\n", lexer.currentChar())
 }
 
-func isLeftBracket(c byte) bool {
-	return c == '['
-}
-
-func isRightBracket(c byte) bool {
-	return c == ']'
-}
-
-func isColon(c byte) bool {
-	return c == ':'
-}
-
-func isComma(c byte) bool {
-	return c == ','
-}
-
-func isEquals(c byte) bool {
-	return c == '='
+func (lexer *lexer) handleUnknownString(str string) {
+	fmt.Printf("Unknown value: %s\n", str)
 }
 
 func Tokenize(source string) []Token {
-	lex := createLexer(source)
+	lexer := createLexer(source)
 
 	// loop when there are still tokens remaining
-	for !lex.at_eof() {
-		if isWhitespace(lex.at()) {
-
-		} else if isAlphaNumeric(lex.at()) {
-			var builder strings.Builder
-
-			for isAlphaNumeric(lex.at()) && !lex.at_eof() {
-				builder.WriteString(string(lex.at()))
-				lex.advanceN(1)
-			}
-
-			value := builder.String()
-
-			if kind, exists := reservedLookup[value]; exists {
-				lex.push(newToken(value, kind))
-			} else {
-				lex.push(newToken(value, IDENTIFIER))
-			}
-			//skip the advance at the end
+	for !lexer.isEOF() {
+		switch {
+		case isWhitespace(lexer.currentChar()):
+			lexer.advanceN(1)
 			continue
 
-		} else if isLeftParenthese(lex.at()) {
-			lex.push(newToken("(", LPAREN))
-		} else if isRightParenthese(lex.at()) {
-			lex.push(newToken(")", RPAREN))
-		} else if isLeftBrace(lex.at()) {
-			lex.push(newToken("{", LBRACE))
-		} else if isRightBrace(lex.at()) {
-			lex.push(newToken("}", RBRACE))
-		} else if isLeftBracket(lex.at()) {
-			lex.push(newToken("[", LBRACKET))
-		} else if isRightBracket(lex.at()) {
-			lex.push(newToken("]", RBRACKET))
-		} else if isColon(lex.at()) {
-			lex.push(newToken(":", COLON))
-		} else if isComma(lex.at()) {
-			lex.push(newToken(",", COMMA))
-		} else if isEquals(lex.at()) {
-			lex.push(newToken("=", EQUALS))
-		} else if lex.at() == '/' && lex.atAdvanceN(1) == '/' {
-			//comments
-			lex.advanceN(2)
-			var builder strings.Builder
+		case isRelationshipSymbol(lexer.currentChar()):
+			lexer.processRelationship()
 
-			for lex.at() != '\n' && !lex.at_eof() {
-				builder.WriteString(string(lex.at()))
-				lex.advanceN(1)
-			}
+		case isAlphaNumeric(lexer.currentChar()):
+			lexer.processAlphaNumeric()
 
-			lex.push(newToken(builder.String(), SINGLE_LINE_COMMENT))
-		} else if kind, exists := operatorLookup[string(lex.at())]; exists {
-			lex.push(newToken(string(lex.at()), kind))
-		} else {
-			fmt.Printf("Unknown character: %c\n", lex.at())
+		case isLeftParenthese(lexer.currentChar()):
+			lexer.push(newToken("(", LPAREN))
+
+		case isRightParenthese(lexer.currentChar()):
+			lexer.push(newToken(")", RPAREN))
+
+		case isLeftBracket(lexer.currentChar()):
+			lexer.push(newToken("[", LBRACKET))
+
+		case isRightBracket(lexer.currentChar()):
+			lexer.push(newToken("]", RBRACKET))
+
+		case isLeftBrace(lexer.currentChar()):
+			lexer.push(newToken("{", LBRACE))
+
+		case isRightBrace(lexer.currentChar()):
+			lexer.push(newToken("}", RBRACE))
+
+		case isEquals(lexer.currentChar()):
+			lexer.push(newToken("=", EQUALS))
+
+		case isColon(lexer.currentChar()):
+			lexer.push(newToken(":", COLON))
+
+		case isComma(lexer.currentChar()):
+			lexer.push(newToken(",", COMMA))
+
+		case isVisiblitySymbol(lexer.currentChar()):
+			lexer.processVisiblitySymbol()
+
+		case isQuotationMark(lexer.currentChar()):
+			lexer.processQuotation()
+
+		case lexer.currentChar() == '/' && lexer.charAtAdvanceN(1) == '/':
+			lexer.processSingleLineComment()
+
+		default:
+			lexer.handleUnknownCharacter()
 		}
 
-		lex.advanceN(1)
+		lexer.advanceN(1)
 	}
 
-	lex.tokens = append(lex.tokens, newToken("EOF", EOF))
-	return lex.tokens
+	lexer.tokens = append(lexer.tokens, newToken("EOF", EOF))
+	return lexer.tokens
 }
-
-// potential bug
-// o and x as operators could also be identifieres as o or x
-// handle later

@@ -2,3 +2,9 @@ class Dummy {
     -make : string = toyota
     +getAttribute1(str : string = f) : string[]
 }
+
+class Test {
+    
+}
+
+Dummy "llabel test" --> "rlabel" Test : "label test"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -21,6 +22,14 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Parsed AST: \n%+v\n", ast)
+	// fmt.Printf("Parsed AST: \n%+v\n", ast)
 
+	jsonFormat, err := json.Marshal(ast)
+
+	if err != nil {
+		fmt.Println("Error converting ast to json")
+		return
+	}
+
+	fmt.Println(string(jsonFormat))
 }

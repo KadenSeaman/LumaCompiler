@@ -58,9 +58,72 @@ func (p *Parser) parseEntity() (*ASTNode, error) {
 		return p.parseClass()
 	case lexer.INTERFACE:
 		return p.parseInterface()
+	//case for relationships
+	case lexer.IDENTIFIER:
+		return p.parseRelationship()
 	default:
-		return nil, fmt.Errorf("unexpected token: %s", token.Value)
+		return nil, fmt.Errorf("unexpected token: %s, Token value: %s", lexer.TokenKindName(token.Kind), token.Value)
 	}
+}
+
+func (p *Parser) parseRelationship() (*ASTNode, error) {
+	sourceToken := p.currentToken()
+
+	if sourceToken.Kind != lexer.IDENTIFIER {
+		return nil, fmt.Errorf("expected token type: %s, token value: %s in relationship, expected: IDENTIFIER", lexer.TokenKindName(sourceToken.Kind), sourceToken.Value)
+	}
+
+	relationshipNode := &ASTNode{Type: RELATIONSHIP, SourceClass: sourceToken.Value}
+
+	p.nextToken() // skip identifier
+
+	//optional left label here
+	if p.currentToken().Kind == lexer.QUOTATION {
+		relationshipNode.LeftLabel = p.currentToken().Value
+		p.nextToken() // skip label
+	}
+
+	relationshipToken := p.currentToken()
+
+	if !lexer.IsRelationshipKind(relationshipToken.Kind) {
+		return nil, fmt.Errorf("expected relationship token, got token type of:%s and value of: %s", lexer.TokenKindName(relationshipToken.Kind), relationshipToken.Value)
+	}
+
+	relationshipNode.RelationshipType = lexer.TokenKindName(relationshipToken.Kind)
+
+	p.nextToken() //skip relationship
+
+	//optional right label here
+	if p.currentToken().Kind == lexer.QUOTATION {
+		relationshipNode.RightLabel = p.currentToken().Value
+		p.nextToken() // skip label
+	}
+
+	targetToken := p.currentToken()
+
+	if targetToken.Kind != lexer.IDENTIFIER {
+		return nil, fmt.Errorf("expected source class name in relationship, got: %s", targetToken.Value)
+	}
+
+	relationshipNode.TargetClass = targetToken.Value
+
+	p.nextToken() // skip relationship
+
+	//optional middle label herre
+	if p.currentToken().Kind == lexer.COLON {
+		p.nextToken() // skip colon
+
+		if p.currentToken().Kind != lexer.QUOTATION {
+			return nil, fmt.Errorf("expected Quotation token for middle label on relationship, got token type of:%s and value of: %s", lexer.TokenKindName(relationshipToken.Kind), relationshipToken.Value)
+		}
+		relationshipNode.MiddleLabel = p.currentToken().Value
+		p.nextToken() // skip label
+	}
+
+	//remember to update name on relationship node
+	relationshipNode.Name = sourceToken.Value + " " + relationshipToken.Value + " " + targetToken.Value
+
+	return relationshipNode, nil
 }
 
 func (p *Parser) parseClass() (*ASTNode, error) {
@@ -91,7 +154,7 @@ func (p *Parser) parseClass() (*ASTNode, error) {
 		if p.currentTokenKind() != lexer.RBRACE {
 			return nil, fmt.Errorf("expected '}' got %s", p.currentToken().Value)
 		}
-		p.nextToken()
+		p.nextToken() // skip }
 	}
 
 	return classNode, nil
@@ -101,7 +164,10 @@ func (p *Parser) parseMember() (*ASTNode, error) {
 	visibility := ""
 
 	// Handle optional visibility
-	if p.currentTokenKind() == lexer.OPERATOR {
+	if p.currentTokenKind() == lexer.DASH ||
+		p.currentTokenKind() == lexer.POUND ||
+		p.currentTokenKind() == lexer.PLUS ||
+		p.currentTokenKind() == lexer.TILDE {
 		visibility = p.currentToken().Value
 		p.nextToken() // skip visilbity
 	}
