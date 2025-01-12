@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Go WASM Parser</title>
+</head>
+<body>
+    <button id="update">update</button>
+    <textarea name="" id="input"></textarea>
+
+    <p id="result"></p>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+        const go = new Go();
+
+        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(result => {
+            go.run(result.instance);
+
+            // Call the exported 'parse' function            
+            const astPtr = parse("class Kaden {}")
+            console.log(astPtr);
+
+            const astString = getAST(astPtr);
+            console.log(astString)
+
+            releaseAST(astPtr);
+        });
+
+        document.getElementById('update').onclick = () => {
+            const sourceCode = document.getElementById('input').value
+
+            // Call the exported 'parse' function            
+            const astPtr = parse(sourceCode)
+            console.log(astPtr);
+
+            const astString = getAST(astPtr);
+            console.log(astString)
+
+            releaseAST(astPtr);
+
+            document.getElementById('result').innerHTML = astString
+            console.log(JSON.parse(astString))
+        }
+    </script>
+</body>
+</html>
