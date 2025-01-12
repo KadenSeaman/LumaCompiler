@@ -11,52 +11,35 @@ import (
 	"github.com/kadenSeaman/lumaCompiler/parser"
 )
 
-// Wrapper for uintptr mapping to the AST for tracking in Go
-var astMap = make(map[uintptr]any)
-var astCounter uintptr = 1 // Start counting from 1 to ensure non-zero pointers
+func parse(this js.Value, args []js.Value) any {
+	// Get the source code from the JavaScript argument
+	source := args[0].String()
+
+	// Tokenize and parse the source code
+	tokens := lexer.Tokenize(source)
+	p := parser.NewParser(tokens)
+
+	// Parse and handle errors
+	ast, err := p.Parse()
+	if err != nil {
+		// Return the error message as a string to JavaScript
+		return js.ValueOf(fmt.Sprintf("Error parsing: %v", err))
+	}
+
+	astJSON, err := json.Marshal(ast)
+	if err != nil {
+		// Return the error message as a string to JavaScript
+		return js.ValueOf(fmt.Sprintf("Error parsing: %v", err))
+	}
+
+	// Return the AST as a string representation to JavaScript
+	return js.ValueOf(string(astJSON))
+}
 
 func main() {
-	js.Global().Set("parse", js.FuncOf(func(this js.Value, args []js.Value) any {
-		source := args[0].String()
+	// Export the parse function to JavaScript
+	js.Global().Set("parse", js.FuncOf(parse))
 
-		tokens := lexer.Tokenize(source)
-		p := parser.NewParser(tokens)
-
-		ast, err := p.Parse()
-		if err != nil {
-			fmt.Println("Error parsing:", err)
-			return nil
-		}
-
-		// Store AST in map and get a unique uintptr
-		ptr := astCounter
-		astMap[ptr] = ast
-		astCounter++
-
-		// Return the uintptr as the identifier
-		return uintptr(ptr)
-	}))
-
-	js.Global().Set("getAST", js.FuncOf(func(this js.Value, args []js.Value) any {
-		ptr := uintptr(args[0].Int())
-		if ast, exists := astMap[ptr]; exists {
-			astJSON, err := json.Marshal(ast)
-
-			if err != nil {
-				fmt.Println("Error converting ast to json")
-				return nil
-			}
-
-			return js.ValueOf(string(astJSON))
-		}
-		return js.ValueOf("AST not found")
-	}))
-
-	js.Global().Set("releaseAST", js.FuncOf(func(this js.Value, args []js.Value) any {
-		ptr := uintptr(args[0].Int())
-		delete(astMap, ptr)
-		return nil
-	}))
-
+	// Prevent the Go runtime from exiting
 	select {}
 }

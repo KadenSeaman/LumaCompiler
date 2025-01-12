@@ -15,28 +15,13 @@
 
         WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then(result => {
             go.run(result.instance);
-
-            // Call the exported 'parse' function            
-            const astPtr = parse("class Kaden {}")
-            console.log(astPtr);
-
-            const astString = getAST(astPtr);
-            console.log(astString)
-
-            releaseAST(astPtr);
         });
 
         document.getElementById('update').onclick = () => {
             const sourceCode = document.getElementById('input').value
 
             // Call the exported 'parse' function            
-            const astPtr = parse(sourceCode)
-            console.log(astPtr);
-
-            const astString = getAST(astPtr);
-            console.log(astString)
-
-            releaseAST(astPtr);
+            const astString = parse(sourceCode)
 
             document.getElementById('result').innerHTML = astString
             console.log(JSON.parse(astString))
