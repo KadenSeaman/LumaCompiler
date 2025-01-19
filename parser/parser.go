@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/kadenSeaman/lumaCompiler/lexer"
 )
@@ -62,7 +62,7 @@ func (p *Parser) parseEntity() (*ASTNode, error) {
 	case lexer.IDENTIFIER:
 		return p.parseRelationship()
 	default:
-		return nil, fmt.Errorf("unexpected token: %s, Token value: %s", lexer.TokenKindName(token.Kind), token.Value)
+		return nil, errors.New("unexpected token: " + lexer.TokenKindName(token.Kind) + ", Token value: " + token.Value)
 	}
 }
 
@@ -70,7 +70,7 @@ func (p *Parser) parseRelationship() (*ASTNode, error) {
 	sourceToken := p.currentToken()
 
 	if sourceToken.Kind != lexer.IDENTIFIER {
-		return nil, fmt.Errorf("expected token type: %s, token value: %s in relationship, expected: IDENTIFIER", lexer.TokenKindName(sourceToken.Kind), sourceToken.Value)
+		return nil, errors.New("expected token type: " + lexer.TokenKindName(sourceToken.Kind) + ", token value: " + sourceToken.Value + "in relationship, expected: IDENTIFIER")
 	}
 
 	relationshipNode := &ASTNode{Type: RELATIONSHIP, SourceClass: sourceToken.Value}
@@ -86,7 +86,9 @@ func (p *Parser) parseRelationship() (*ASTNode, error) {
 	relationshipToken := p.currentToken()
 
 	if !lexer.IsRelationshipKind(relationshipToken.Kind) {
-		return nil, fmt.Errorf("expected relationship token, got token type of:%s and value of: %s", lexer.TokenKindName(relationshipToken.Kind), relationshipToken.Value)
+		return nil, errors.New("expected relationship token, got token type of: " +
+			lexer.TokenKindName(relationshipToken.Kind) +
+			" and value of: " + relationshipToken.Value)
 	}
 
 	relationshipNode.RelationshipType = lexer.TokenKindName(relationshipToken.Kind)
@@ -102,7 +104,7 @@ func (p *Parser) parseRelationship() (*ASTNode, error) {
 	targetToken := p.currentToken()
 
 	if targetToken.Kind != lexer.IDENTIFIER {
-		return nil, fmt.Errorf("expected source class name in relationship, got: %s", targetToken.Value)
+		return nil, errors.New("expected source class name in relationship, got: " + targetToken.Value)
 	}
 
 	relationshipNode.TargetClass = targetToken.Value
@@ -114,7 +116,8 @@ func (p *Parser) parseRelationship() (*ASTNode, error) {
 		p.nextToken() // skip colon
 
 		if p.currentToken().Kind != lexer.QUOTATION {
-			return nil, fmt.Errorf("expected Quotation token for middle label on relationship, got token type of:%s and value of: %s", lexer.TokenKindName(relationshipToken.Kind), relationshipToken.Value)
+			return nil, errors.New("expected Quotation token for middle label on relationship, got token type of: " +
+				lexer.TokenKindName(relationshipToken.Kind) + " and value of: " + relationshipToken.Value)
 		}
 		relationshipNode.MiddleLabel = p.currentToken().Value
 		p.nextToken() // skip label
@@ -133,7 +136,7 @@ func (p *Parser) parseClass() (*ASTNode, error) {
 	nameToken := p.currentToken()
 
 	if nameToken.Kind != lexer.IDENTIFIER {
-		return nil, fmt.Errorf("expected class name, got :%s", nameToken.Value)
+		return nil, errors.New("expected class name, got: " + nameToken.Value)
 	}
 
 	classNode := &ASTNode{Type: CLASS, Name: nameToken.Value}
@@ -152,7 +155,7 @@ func (p *Parser) parseClass() (*ASTNode, error) {
 		}
 
 		if p.currentTokenKind() != lexer.RBRACE {
-			return nil, fmt.Errorf("expected '}' got %s", p.currentToken().Value)
+			return nil, errors.New("expected '}', got: " + p.currentToken().Value)
 		}
 		p.nextToken() // skip }
 	}
@@ -174,7 +177,7 @@ func (p *Parser) parseMember() (*ASTNode, error) {
 
 	// Must have an identifier
 	if p.currentTokenKind() != lexer.IDENTIFIER {
-		return nil, fmt.Errorf("expected Identifier in property, got %s", p.currentToken().Value)
+		return nil, errors.New("expected Identifier in property, got: " + p.currentToken().Value)
 	}
 
 	name := p.currentToken().Value
@@ -195,7 +198,7 @@ func (p *Parser) parseField(name string, visibility string) (*ASTNode, error) {
 		//specified type
 		p.nextToken() // skip colon
 		if p.currentTokenKind() != lexer.IDENTIFIER {
-			return nil, fmt.Errorf("expected Identifier after colon in property, got %s", p.currentToken().Value)
+			return nil, errors.New("expected Identifier after colon in property, got: " + p.currentToken().Value)
 		}
 		valueType = p.currentToken().Value
 		p.nextToken() // skip identifier
@@ -206,7 +209,7 @@ func (p *Parser) parseField(name string, visibility string) (*ASTNode, error) {
 			p.nextToken() // skip [
 
 			if p.currentTokenKind() != lexer.RBRACKET {
-				return nil, fmt.Errorf("expected ] after [ in field type decleration, got %s", p.currentToken().Value)
+				return nil, errors.New("expected ']' after '[' in field type declaration, got: " + p.currentToken().Value)
 			}
 
 			valueType += p.currentToken().Value
@@ -217,7 +220,7 @@ func (p *Parser) parseField(name string, visibility string) (*ASTNode, error) {
 	if p.currentTokenKind() == lexer.EQUALS {
 		p.nextToken() // skip equals
 		if p.currentTokenKind() != lexer.IDENTIFIER {
-			return nil, fmt.Errorf("expected Identifier after equals in property, got %s", p.currentToken().Value)
+			return nil, errors.New("expected Identifier after equals in property, got: " + p.currentToken().Value)
 		}
 		defaultValue = p.currentToken().Value
 		p.nextToken()
@@ -253,12 +256,12 @@ func (p *Parser) parseMethod(name string, visibility string) (*ASTNode, error) {
 				p.nextToken()
 			}
 		} else {
-			return nil, fmt.Errorf("expected parameter name or ), got %s", p.currentToken().Value)
+			return nil, errors.New("expected parameter name or ')', got: " + p.currentToken().Value)
 		}
 	}
 
 	if p.currentTokenKind() != lexer.RPAREN {
-		return nil, fmt.Errorf("expected ) after method parameters, got %s", p.currentToken().Value)
+		return nil, errors.New("expected ')' after method parameters, got: " + p.currentToken().Value)
 	}
 	p.nextToken() // skip )
 
@@ -266,7 +269,7 @@ func (p *Parser) parseMethod(name string, visibility string) (*ASTNode, error) {
 		//specified type
 		p.nextToken() // skip colon
 		if p.currentTokenKind() != lexer.IDENTIFIER {
-			return nil, fmt.Errorf("expected Identifier after colon in property, got %s", p.currentToken().Value)
+			return nil, errors.New("expected Identifier after colon in property, got: " + p.currentToken().Value)
 		}
 
 		//optional array return type
@@ -279,7 +282,7 @@ func (p *Parser) parseMethod(name string, visibility string) (*ASTNode, error) {
 			p.nextToken() // skip [
 
 			if p.currentTokenKind() != lexer.RBRACKET {
-				return nil, fmt.Errorf("expected ] after [ in field type decleration, got %s", p.currentToken().Value)
+				return nil, errors.New("expected ']' after '[' in field type declaration, got: " + p.currentToken().Value)
 			}
 
 			returnType += p.currentToken().Value
@@ -298,7 +301,7 @@ func (p *Parser) parseInterface() (*ASTNode, error) {
 	nameToken := p.currentToken()
 
 	if nameToken.Kind != lexer.IDENTIFIER {
-		return nil, fmt.Errorf("expected identifier in interface, got %s", nameToken.Value)
+		return nil, errors.New("expected identifier in interface, got: " + nameToken.Value)
 	}
 	interfaceNode := &ASTNode{Type: INTERFACE, Name: nameToken.Value}
 	p.nextToken() // skip identifier

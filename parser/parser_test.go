@@ -39,6 +39,24 @@ func TestParseClass(t *testing.T) {
 			},
 		},
 		{
+			name: "class with field with array type",
+			input: `class MyClass {
+				- name: string[]
+			}`,
+			expected: &ASTNode{
+				Type: CLASS,
+				Name: "MyClass",
+				Children: []ASTNode{
+					{
+						Type:       FIELD,
+						Name:       "name",
+						Visibility: "-",
+						ValueType:  "string[]",
+					},
+				},
+			},
+		},
+		{
 			name: "class with method",
 			input: `class MyClass {
 				+ getName(): string

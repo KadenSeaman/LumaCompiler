@@ -1,7 +1,6 @@
 package lexer
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -119,11 +118,11 @@ func (lexer *lexer) processQuotation() {
 }
 
 func (lexer *lexer) handleUnknownCharacter() {
-	fmt.Printf("Unknown character: %c\n", lexer.currentChar())
+	// fmt.Printf("Unknown character: %c\n", lexer.currentChar())
 }
 
 func (lexer *lexer) handleUnknownString(str string) {
-	fmt.Printf("Unknown value: %s\n", str)
+	// fmt.Printf("Unknown value: %s\n", str)
 }
 
 func Tokenize(source string) []Token {
